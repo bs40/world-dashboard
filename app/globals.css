@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+@theme {
+  /* Core surfaces */
+  --color-ink: #030a10;
+  --color-navy: #07131d;
+  --color-panel: #091925;
+  --color-panel2: #0b1f2e;
+  --color-edge: #12344a;
+  --color-edge-soft: #0d2536;
+
+  /* Accents */
+  --color-cyan: #22b8f0;
+  --color-cyanpale: #7ddcff;
+  --color-frost: #e8f1f6;
+  --color-steel: #8395a2;
+  --color-steel-dim: #5a6d7a;
+
+  /* Semantic */
+  --color-pos: #35c98a;
+  --color-warn: #e8b341;
+  --color-elev: #e87b3a;
+  --color-sev: #e24a4a;
+  --color-tech: #9b7bf0;
+  --color-env: #3aa69b;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --shadow-glow: 0 0 24px 0 rgb(34 184 240 / 0.12);
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.02) inset, 0 8px 24px -12px rgb(0 0 0 / 0.6);
+
+  --animate-ticker: ticker 60s linear infinite;
+  --animate-pulse-dot: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-ping-slow: ping-slow 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  @keyframes ping-slow {
+    0% { transform: scale(1); opacity: 0.6; }
+    80%, 100% { transform: scale(2.6); opacity: 0; }
+  }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-frost);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1, "cv03" 1;
+}
+
+::selection {
+  background: rgb(34 184 240 / 0.28);
+}
+
+/* Thin scrollbars that match the theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-edge) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-edge);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Utility: compact uppercase label used across the interface */
+.label-caps {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.label-caps-sm {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.625rem;
+  font-weight: 500;
+}
+
+/* Numeric readouts */
+.numeric {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Panel base — 1px border, faint inner top light, restrained depth */
+.panel {
+  background: linear-gradient(180deg, rgb(11 31 46 / 0.55), rgb(9 25 37 / 0.85));
+  border: 1px solid var(--color-edge-soft);
+  border-radius: 0.375rem;
+  box-shadow: var(--shadow-panel);
+}
+
+.panel-hover {
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+.panel-hover:hover {
+  border-color: var(--color-edge);
+  box-shadow: var(--shadow-panel), 0 0 20px -6px rgb(34 184 240 / 0.15);
+}
+
+/* Cyan edge illumination for active elements */
+.edge-glow {
+  border-color: rgb(34 184 240 / 0.45);
+  box-shadow: 0 0 16px -4px rgb(34 184 240 / 0.35), var(--shadow-panel);
+}
+
+/* Focus visibility */
+:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(
+    100deg,
+    rgb(18 52 74 / 0.25) 40%,
+    rgb(34 184 240 / 0.12) 50%,
+    rgb(18 52 74 / 0.25) 60%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.6s linear infinite;
+}
+@keyframes skeleton-wave {
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
