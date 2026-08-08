@@ -67,6 +67,47 @@ export function setRefreshInterval(value: RefreshInterval) {
   listeners.forEach((l) => l());
 }
 
+// ── live TV channel preference ───────────────────────────────
+
+const TV_KEY = "world-dashboard:live-tv";
+const DEFAULT_TV = "dw";
+
+let tvCached = DEFAULT_TV;
+let tvLoaded = false;
+const tvListeners = new Set<() => void>();
+
+export function subscribeTvChannel(onStoreChange: () => void) {
+  tvListeners.add(onStoreChange);
+  return () => {
+    tvListeners.delete(onStoreChange);
+  };
+}
+
+export function getTvChannelSnapshot(): string {
+  if (!tvLoaded) {
+    try {
+      tvCached = localStorage.getItem(TV_KEY) ?? DEFAULT_TV;
+    } catch {
+      tvCached = DEFAULT_TV;
+    }
+    tvLoaded = true;
+  }
+  return tvCached;
+}
+
+export const getTvChannelServerSnapshot = () => DEFAULT_TV;
+
+export function setTvChannel(id: string) {
+  tvCached = id;
+  tvLoaded = true;
+  try {
+    localStorage.setItem(TV_KEY, id);
+  } catch {
+    // Storage unavailable — applies for this session only.
+  }
+  tvListeners.forEach((l) => l());
+}
+
 // ── theme preference (dark | light | system) ─────────────────
 // The resolved theme is applied as data-theme on <html>; a pre-hydration
 // script in layout.tsx does the same before React loads to avoid a flash.

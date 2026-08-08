@@ -171,6 +171,23 @@ export interface MapMarker {
   agoLabel?: string;
 }
 
+export interface LiveTvChannel {
+  id: string;
+  name: string;
+  /** YouTube channel handle, e.g. "@dwnews". */
+  handle: string;
+  /** Last-known live video id, used when live resolution fails. */
+  fallbackVideoId: string;
+}
+
+export interface LiveTvStream {
+  id: string;
+  name: string;
+  videoId: string;
+  /** False when serving the fallback id rather than a freshly resolved one. */
+  resolved: boolean;
+}
+
 export interface SearchItem {
   id: string;
   title: string;

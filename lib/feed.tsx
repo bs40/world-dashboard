@@ -9,7 +9,7 @@ import {
   type RefreshInterval,
 } from "@/lib/prefs";
 import { topStories as demoStories } from "@/data/news";
-import type { NewsStory } from "@/types";
+import type { LiveTvStream, NewsStory } from "@/types";
 
 /**
  * Live feed store.
@@ -27,6 +27,7 @@ interface FeedApiResponse {
   stories: NewsStory[];
   fetchedAt: string;
   sources: { live: number; total: number };
+  liveTv?: LiveTvStream[];
   error?: string;
 }
 
@@ -37,6 +38,7 @@ interface FeedState {
   lastUpdated: Date | null;
   sourcesLive: number;
   sourcesTotal: number;
+  liveTv: LiveTvStream[];
 }
 
 const INITIAL: FeedState = {
@@ -46,6 +48,7 @@ const INITIAL: FeedState = {
   lastUpdated: null,
   sourcesLive: 0,
   sourcesTotal: 0,
+  liveTv: [],
 };
 
 let state: FeedState = INITIAL;
@@ -75,6 +78,7 @@ async function load() {
         status: "live",
         sourcesLive: data.sources?.live ?? 0,
         sourcesTotal: data.sources?.total ?? 0,
+        liveTv: data.liveTv ?? [],
         lastUpdated: new Date(data.fetchedAt),
         isRefreshing: false,
       });
@@ -84,6 +88,7 @@ async function load() {
         status: "demo",
         sourcesLive: data.sources?.live ?? 0,
         sourcesTotal: data.sources?.total ?? 0,
+        liveTv: data.liveTv ?? [],
         lastUpdated: new Date(),
         isRefreshing: false,
       });

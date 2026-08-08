@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ingestAll } from "@/lib/sources";
+import { resolveLiveTv } from "@/lib/sources/livetv";
 
 /**
  * Live news endpoint.
@@ -16,7 +17,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const { stories, statuses, fetchedAt } = await ingestAll();
+    const [{ stories, statuses, fetchedAt }, liveTv] = await Promise.all([
+      ingestAll(),
+      resolveLiveTv(),
+    ]);
     const live = statuses.filter((s) => s.ok).length;
 
     return NextResponse.json(
@@ -26,6 +30,7 @@ export async function GET() {
         fetchedAt,
         sources: { live, total: statuses.length },
         statuses,
+        liveTv,
       },
       {
         headers: {

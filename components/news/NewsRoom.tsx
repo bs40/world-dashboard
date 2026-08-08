@@ -9,6 +9,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { WorldMap } from "@/components/maps/WorldMap";
 import { HeroStory } from "./HeroStory";
+import { LiveTvPanel } from "./LiveTvPanel";
 import { NewsCard } from "./NewsCard";
 import { useFeed } from "@/lib/feed";
 import { sources } from "@/data/sources";
@@ -113,6 +114,8 @@ export function NewsRoom() {
 
         {/* Right rail */}
         <div className="space-y-4">
+          <LiveTvPanel />
+
           <section aria-labelledby="live-updates">
             <SectionHeader title="Live updates" as="h2">
               <StatusPill tone="sev" pulse>

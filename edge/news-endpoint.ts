@@ -29,6 +29,7 @@ if (!g.process) {
 
 import * as BunnySDK from "@bunny.net/edgescript-sdk";
 import { ingestAll, type IngestResult } from "../lib/sources";
+import { resolveLiveTv } from "../lib/sources/livetv";
 
 /** Serve cached results for this long before re-hitting publisher feeds. */
 const CACHE_TTL_MS = 240_000;
@@ -68,7 +69,11 @@ BunnySDK.net.http.serve(async (request: Request): Promise<Response> => {
   }
 
   try {
-    const { stories, statuses, fetchedAt } = await getNews();
+    // resolveLiveTv caches internally for 30 min; getNews for 4 min.
+    const [{ stories, statuses, fetchedAt }, liveTv] = await Promise.all([
+      getNews(),
+      resolveLiveTv(),
+    ]);
     const live = statuses.filter((s) => s.ok).length;
     return new Response(
       JSON.stringify({
@@ -77,6 +82,7 @@ BunnySDK.net.http.serve(async (request: Request): Promise<Response> => {
         fetchedAt,
         sources: { live, total: statuses.length },
         statuses,
+        liveTv,
       }),
       {
         headers: {
