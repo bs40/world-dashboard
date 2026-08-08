@@ -18,7 +18,7 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { WorldMap, CATEGORY_COLORS } from "@/components/maps/WorldMap";
 import { globalStats, planetMetrics } from "@/data/metrics";
-import { topStories } from "@/data/news";
+import { useFeed } from "@/lib/feed";
 import { cn, formatAgo } from "@/lib/utils";
 import type { Category, MapMarker } from "@/types";
 
@@ -42,24 +42,32 @@ const METRIC_ICONS: Record<string, typeof Thermometer> = {
 
 export function GlobalMapPanel() {
   const [activeFilters, setActiveFilters] = useState<Set<Category>>(new Set());
+  const { stories, isLive } = useFeed();
 
-  const markers = useMemo<MapMarker[]>(
-    () =>
-      topStories
-        .filter((s) => s.location)
-        .filter((s) => activeFilters.size === 0 || activeFilters.has(s.category))
-        .map((s) => ({
-          id: s.id,
-          lat: s.location!.lat,
-          lon: s.location!.lon,
-          label: s.location!.label,
-          detail: s.headline,
-          category: s.category,
-          severity: s.category === "conflicts" ? "high" : "moderate",
-          agoLabel: formatAgo(s.publishedAgoMin),
-        })),
-    [activeFilters]
-  );
+  const markers = useMemo<MapMarker[]>(() => {
+    const seen = new Set<string>();
+    return stories
+      .filter((s) => s.location)
+      .filter((s) => activeFilters.size === 0 || activeFilters.has(s.category))
+      .filter((s) => {
+        // One marker per place per category, newest wins — keeps the map legible.
+        const key = `${s.location!.label}:${s.category}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 45)
+      .map((s) => ({
+        id: s.id,
+        lat: s.location!.lat,
+        lon: s.location!.lon,
+        label: s.location!.label,
+        detail: s.headline,
+        category: s.category,
+        severity: s.category === "conflicts" ? "high" : "moderate",
+        agoLabel: formatAgo(s.publishedAgoMin),
+      }));
+  }, [stories, activeFilters]);
 
   const toggleFilter = (id: Category) => {
     setActiveFilters((prev) => {
@@ -75,7 +83,7 @@ export function GlobalMapPanel() {
       <div className="flex items-center justify-between border-b border-edge-soft px-4 py-3">
         <h2 className="label-caps text-frost">Global overview</h2>
         <span className="label-caps-sm text-steel-dim">
-          {markers.length} active markers · demo data
+          {markers.length} active markers · {isLive ? "live feeds" : "demo data"}
         </span>
       </div>
 

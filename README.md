@@ -4,9 +4,18 @@ A global intelligence and news command centre — world news, geopolitics, marke
 climate, health, regional intelligence, a conflict tracker and long-form insight
 reports, presented in a restrained, cinematic dark interface.
 
-> All content in this build is **clearly-marked demo/mock data**. The architecture
-> is designed so live feeds and public datasets can be wired in without touching
-> the UI layer.
+**News is live.** Headlines, summaries and photos are ingested server-side from
+16 publisher syndication feeds (BBC, The Guardian, Al Jazeera, France 24,
+Deutsche Welle, NPR, CBC, UN News, ScienceDaily), deduplicated across
+publishers, auto-categorised, geocoded onto the world map, and refreshed on a
+user-selected 5/15/30/60-minute cadence (picker in the header; the choice
+persists in localStorage). Every story links back to the original article — the
+dashboard shows only what each publisher offers for syndication, always with
+attribution. If every feed is unreachable, the app falls back to clearly-marked
+demo content attributed to fictional placeholder outlets.
+
+Analytics, regions, topics and reports still use **clearly-marked demo data**;
+their adapters in `lib/api/datasets.ts` are the seam for wiring real datasets.
 
 ## Quick start — how to run it
 
@@ -87,31 +96,38 @@ types/                Shared domain types
 public/images/        Procedural SVG editorial imagery (no copyrighted photos)
 ```
 
-## Source adapters — adding a live feed
+## Live news pipeline
 
-Sources are declared in `data/sources.ts`:
-
-```ts
-{
-  id: "global-wire",
-  name: "Global Wire",
-  region: "Worldwide",
-  category: "wire",
-  trustTier: "primary",
-  rssUrl: "https://example.org/feed.xml",   // ← add this to go live
-  enabled: true,
-}
+```
+publisher feeds ──► lib/sources/rss.ts    (RSS/RDF/Atom parse, image + date extraction)
+                    lib/sources/api.ts    (Guardian Content API when a key is set)
+                          │
+                    lib/sources/index.ts  (fan-out, cross-publisher dedupe,
+                          │                "N sources reporting" counts)
+                    app/api/news/route.ts (JSON endpoint; upstream cached ~4 min)
+                          │
+                    lib/feed.tsx          (client store: polls on the sticky
+                          │                5/15/30/60-min interval from lib/prefs.ts)
+                    Overview · News · ticker · /news/[id]
 ```
 
-`lib/sources/index.ts` routes every enabled source through an adapter:
+- Sources are declared in `data/sources.ts` — add an entry with an `rssUrl` to add
+  a publisher; set `enabled: false` to silence one.
+- Category is inferred from headline keywords (`lib/sources/rss.ts`); map placement
+  from a gazetteer of ~130 places (`lib/geocode.ts`), labelled as inferred.
+- Live article pages show the publisher's own headline, summary and image with a
+  prominent link to the full story — full text is never reproduced. Demo articles
+  (fictional outlets) keep their generated body copy and are labelled as demo.
+- Fetching is **server-side only**; each upstream feed response is cached ~4 minutes
+  via `next: { revalidate }`, so many browsers don't multiply publisher load.
 
-- `rssUrl` → `lib/sources/rss.ts` (fetch + XML parse, server-side, cached with `revalidate`)
-- `apiUrl` → `lib/sources/api.ts` (official JSON APIs; keys via `process.env`)
-- neither → the demo content in `data/news.ts` keeps the UI populated
+### Guardian Content API (optional)
 
-Rules baked into the design: fetching happens **server-side only** (route handlers /
-server components), keys live in **environment variables**, and only official APIs
-or publisher-offered RSS feeds should be used — no scraping against terms of service.
+Copy `.env.example` to `.env.local` and set `GUARDIAN_API_KEY` (free key from
+[open-platform.theguardian.com](https://open-platform.theguardian.com/access/)).
+The four Guardian sources then switch from RSS to the Content API — richer
+summaries and larger images. Keys are read server-side only and never committed;
+`.env.local` is gitignored.
 
 ## Public datasets
 
@@ -120,6 +136,36 @@ Our World in Data, NASA, NOAA, USGS and Eurostat, and exposes
 `fetchSeries(provider, indicator)` which currently returns deterministic mock series.
 Implement the per-provider request/parse in that file; every consumer already goes
 through this seam.
+
+## Deployment (Bunny.net)
+
+The production site runs entirely on Bunny.net:
+
+- **Site**: static export (`BUILD_STATIC=1 next build` → `/out`) on the
+  `world-dashboard` Storage Zone behind the `world-dashboard` Pull Zone —
+  https://world-dashboard.b-cdn.net
+- **Feed endpoint**: the same ingestion code bundled as a Bunny Edge Script
+  (`edge/news-endpoint.ts` → `scripts/build-edge.mjs`), published as
+  `world-dashboard-news` and reached through its own pull zone —
+  https://world-dashboard-news.b-cdn.net — with `GUARDIAN_API_KEY` stored as a
+  script environment variable and a 4-minute in-memory cache in front of the
+  publisher feeds.
+
+Deploys are one command (idempotent — zones and the script are created only if
+missing):
+
+```bash
+node scripts/deploy-bunny.mjs all
+```
+
+`probe` inspects the account read-only; `script` and `site <endpoint-url>` run
+the two halves separately. Credentials come from `.env.deploy`
+(`BUNNY_API_KEY=…`, gitignored); the Guardian key is read from `.env.local` and
+pushed to the script's environment, never committed.
+
+To attach **world.bs40.com** later: add it as a custom hostname on the
+`world-dashboard` pull zone (with free SSL) and point the domain's CNAME at
+`world-dashboard.b-cdn.net`. No rebuild needed.
 
 ## Design system
 

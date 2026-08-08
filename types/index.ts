@@ -25,6 +25,10 @@ export interface NewsSource {
   rssUrl?: string;
   apiUrl?: string;
   enabled: boolean;
+  /** Category applied to items from this feed unless keyword matching overrides it. */
+  defaultCategory?: Category;
+  /** Publisher homepage, shown as attribution on article pages. */
+  homepage?: string;
 }
 
 export interface NewsStory {
@@ -35,10 +39,18 @@ export interface NewsStory {
   sourceId: string;
   publishedAgoMin: number; // minutes ago, relative for demo data
   sourcesCount?: number;
-  image?: string; // path under /public
+  image?: string; // local path under /public, or a remote publisher URL for live items
   location?: { lat: number; lon: number; label: string };
   live?: boolean;
   featured?: boolean;
+  /** Set on items ingested from a real RSS feed. */
+  isLive?: boolean;
+  /** Original article URL at the publisher (live items only). */
+  link?: string;
+  /** ISO publication timestamp (live items only). */
+  publishedAt?: string;
+  /** Publisher display name, denormalised so live items render without a lookup. */
+  sourceName?: string;
 }
 
 export interface LiveUpdate {

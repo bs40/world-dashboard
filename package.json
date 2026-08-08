@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "fast-xml-parser": "^5.10.1",
     "framer-motion": "^13.0.0",
     "lucide-react": "^1.30.0",
     "next": "16.3.0",
@@ -18,13 +19,18 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@bunny.net/edgescript-sdk": "^0.12.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.28.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
   }
 }

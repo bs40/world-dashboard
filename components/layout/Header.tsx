@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Bell, LayoutGrid, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ClockUTC } from "./ClockUTC";
+import { RefreshControl } from "./RefreshControl";
 import { useSearchDialog } from "./SearchDialog";
 
 const NAV = [
@@ -66,9 +67,11 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 md:ml-0">
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <RefreshControl />
+          <span aria-hidden className="hidden h-6 w-px bg-edge-soft lg:block" />
           <ClockUTC />
-          <div className="ml-2 flex items-center">
+          <div className="flex items-center">
             <button
               aria-label="Search (Ctrl+K)"
               onClick={open}

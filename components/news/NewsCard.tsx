@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { EditorialImage } from "@/components/ui/EditorialImage";
+import { fallbackFor } from "@/lib/imagery";
 import { SaveButton } from "@/components/ui/SaveButton";
 import { SourceBadge } from "@/components/ui/SourceBadge";
-import { cn, formatAgo } from "@/lib/utils";
+import { cn, formatAgo, storyHref } from "@/lib/utils";
 import type { NewsStory } from "@/types";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -32,15 +33,12 @@ export function NewsCard({ story, layout = "row", showSummary = false, className
         className
       )}
     >
-      {story.image && (
-        <EditorialImage
-          src={story.image}
-          alt=""
-          className={cn(
-            layout === "row" ? "h-16 w-24 shrink-0 rounded-sm" : "h-36 w-full"
-          )}
-        />
-      )}
+      <EditorialImage
+        src={story.image ?? fallbackFor(story.category)}
+        fallbackSrc={fallbackFor(story.category)}
+        alt=""
+        className={cn(layout === "row" ? "h-16 w-24 shrink-0 rounded-sm" : "h-36 w-full")}
+      />
       <div className={cn("min-w-0 flex-1", layout === "stack" && "p-3")}>
         <h3 className="text-sm font-medium leading-snug text-frost transition-colors group-hover:text-cyanpale">
           {story.live && (
@@ -50,7 +48,7 @@ export function NewsCard({ story, layout = "row", showSummary = false, className
             </span>
           )}
           {/* Stretched link: makes the whole card clickable */}
-          <Link href={`/news/${story.id}`} className="outline-none after:absolute after:inset-0">
+          <Link href={storyHref(story)} className="outline-none after:absolute after:inset-0">
             {story.headline}
           </Link>
         </h3>
@@ -60,8 +58,8 @@ export function NewsCard({ story, layout = "row", showSummary = false, className
         <div className="label-caps-sm mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-steel-dim">
           <span>{formatAgo(story.publishedAgoMin)}</span>
           <span aria-hidden>·</span>
-          <span>{CATEGORY_LABEL[story.category]}</span>
-          {story.sourcesCount && (
+          <span>{story.sourceName ?? CATEGORY_LABEL[story.category]}</span>
+          {story.sourcesCount && story.sourcesCount > 1 && (
             <>
               <span aria-hidden>·</span>
               <span>{story.sourcesCount} sources</span>
@@ -73,7 +71,7 @@ export function NewsCard({ story, layout = "row", showSummary = false, className
         id={`story-${story.id}`}
         kind="story"
         title={story.headline}
-        href={`/news/${story.id}`}
+        href={storyHref(story)}
         meta={CATEGORY_LABEL[story.category]}
         className={cn(
           "relative z-10",
@@ -89,13 +87,13 @@ export function NewsListItem({ story, className }: { story: NewsStory; className
     <article className={cn("group relative flex items-start justify-between gap-3 py-2.5", className)}>
       <div className="min-w-0">
         <h4 className="text-sm leading-snug text-frost transition-colors group-hover:text-cyanpale">
-          <Link href={`/news/${story.id}`} className="outline-none after:absolute after:inset-0">
+          <Link href={storyHref(story)} className="outline-none after:absolute after:inset-0">
             {story.headline}
           </Link>
         </h4>
         <div className="label-caps-sm mt-1 flex items-center gap-2 text-steel-dim">
           <span>{formatAgo(story.publishedAgoMin)}</span>
-          {story.sourcesCount && (
+          {story.sourcesCount && story.sourcesCount > 1 && (
             <>
               <span aria-hidden>·</span>
               <span>{story.sourcesCount} sources</span>
@@ -108,7 +106,7 @@ export function NewsListItem({ story, className }: { story: NewsStory; className
         id={`story-${story.id}`}
         kind="story"
         title={story.headline}
-        href={`/news/${story.id}`}
+        href={storyHref(story)}
         className="relative z-10"
       />
     </article>

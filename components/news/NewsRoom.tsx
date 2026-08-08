@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 import { Panel } from "@/components/ui/Panel";
@@ -9,9 +10,9 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import { WorldMap } from "@/components/maps/WorldMap";
 import { HeroStory } from "./HeroStory";
 import { NewsCard } from "./NewsCard";
-import { liveUpdates, topStories } from "@/data/news";
+import { useFeed } from "@/lib/feed";
 import { sources } from "@/data/sources";
-import { cn, formatAgo } from "@/lib/utils";
+import { cn, formatAgo, storyHref } from "@/lib/utils";
 import type { Category, MapMarker } from "@/types";
 
 const TABS: { id: string; label: string }[] = [
@@ -26,31 +27,44 @@ const TABS: { id: string; label: string }[] = [
 
 export function NewsRoom() {
   const [tab, setTab] = useState("all");
+  const { stories, status, isLive } = useFeed();
 
   const filtered = useMemo(
     () =>
-      topStories.filter(
+      stories.filter(
         (s) => tab === "all" || s.category === tab || (tab === "politics" && s.category === "conflicts")
       ),
-    [tab]
+    [stories, tab]
   );
 
-  const lead = filtered.find((s) => s.featured) ?? filtered[0];
-  const secondary = filtered.filter((s) => s.id !== lead?.id).slice(0, 3);
-  const rest = filtered.filter((s) => s.id !== lead?.id).slice(3, 9);
+  // Lead with the newest story that actually carries a photograph.
+  const lead = filtered.find((s) => s.featured) ?? filtered.find((s) => s.image) ?? filtered[0];
+  const others = filtered.filter((s) => s.id !== lead?.id);
+  const secondary = others.slice(0, 3);
+  const rest = others.slice(3, 15);
 
-  const markers: MapMarker[] = filtered
-    .filter((s) => s.location)
-    .map((s) => ({
-      id: s.id,
-      lat: s.location!.lat,
-      lon: s.location!.lon,
-      label: s.location!.label,
-      detail: s.headline,
-      category: s.category as Category,
-      severity: s.category === "conflicts" ? "high" : "moderate",
-      agoLabel: formatAgo(s.publishedAgoMin),
-    }));
+  const liveUpdates = useMemo(
+    () => stories.filter((s) => s.location).slice(0, 5),
+    [stories]
+  );
+
+  const markers: MapMarker[] = useMemo(
+    () =>
+      filtered
+        .filter((s) => s.location)
+        .slice(0, 60)
+        .map((s) => ({
+          id: s.id,
+          lat: s.location!.lat,
+          lon: s.location!.lon,
+          label: s.location!.label,
+          detail: s.headline,
+          category: s.category as Category,
+          severity: s.category === "conflicts" ? "high" : "moderate",
+          agoLabel: formatAgo(s.publishedAgoMin),
+        })),
+    [filtered]
+  );
 
   return (
     <div className="space-y-4 p-4 lg:p-5">
@@ -74,7 +88,9 @@ export function NewsRoom() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
         {/* Lead + secondary stack */}
         <div className="space-y-3">
-          {lead ? (
+          {status === "loading" ? (
+            <div className="skeleton h-80 rounded-sm" />
+          ) : lead ? (
             <HeroStory story={lead} heightClass="h-80" />
           ) : (
             <Panel className="flex h-80 items-center justify-center text-sm text-steel">
@@ -106,21 +122,27 @@ export function NewsRoom() {
             <Panel padded={false}>
               <ul className="divide-y divide-edge-soft">
                 {liveUpdates.map((u) => (
-                  <li key={u.id} className="flex items-start gap-2.5 px-4 py-2.5">
+                  <li key={u.id} className="group relative flex items-start gap-2.5 px-4 py-2.5">
                     <span
                       className={cn(
                         "label-caps-sm mt-0.5 shrink-0 rounded-sm px-1 py-px",
-                        u.breaking ? "bg-sev/15 text-sev" : "bg-cyan/10 text-cyan"
+                        u.category === "conflicts" ? "bg-sev/15 text-sev" : "bg-cyan/10 text-cyan"
                       )}
                     >
-                      Live
+                      {u.publishedAgoMin < 90 ? "Live" : "Wire"}
                     </span>
                     <div className="min-w-0">
-                      <div className="label-caps-sm text-steel-dim">{u.location}</div>
-                      <p className="text-xs leading-snug text-frost">{u.text}</p>
+                      <div className="label-caps-sm text-steel-dim">
+                        {u.location?.label ?? u.sourceName}
+                      </div>
+                      <p className="text-xs leading-snug text-frost transition-colors group-hover:text-cyanpale">
+                        <Link href={storyHref(u)} className="outline-none after:absolute after:inset-0">
+                          {u.headline}
+                        </Link>
+                      </p>
                     </div>
                     <span className="label-caps-sm ml-auto shrink-0 text-steel-dim">
-                      {formatAgo(u.agoMin)}
+                      {formatAgo(u.publishedAgoMin)}
                     </span>
                   </li>
                 ))}
@@ -165,7 +187,9 @@ export function NewsRoom() {
                 ))}
               </ul>
               <p className="label-caps-sm mt-3 border-t border-edge-soft pt-2 text-steel-dim">
-                Demo sources — live feeds configurable in /data/sources.ts
+                {isLive
+                  ? "Headlines and thumbnails via publisher RSS · full articles at the source"
+                  : "Live feeds unavailable — showing bundled demo content"}
               </p>
             </Panel>
           </section>

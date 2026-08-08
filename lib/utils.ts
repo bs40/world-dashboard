@@ -1,7 +1,19 @@
 import { clsx, type ClassValue } from "clsx";
+import type { NewsStory } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
+}
+
+/**
+ * Canonical article URL for a story.
+ *
+ * Demo stories have prerendered pages at /news/<id>. Live stories rotate too
+ * fast to prerender, so they render client-side at /news/story/?id=<id> —
+ * a static-export-safe route that reads the feed store.
+ */
+export function storyHref(story: Pick<NewsStory, "id" | "isLive">): string {
+  return story.isLive ? `/news/story/?id=${story.id}` : `/news/${story.id}`;
 }
 
 export function formatAgo(min: number): string {
