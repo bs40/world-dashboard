@@ -24,12 +24,20 @@ export const metadata: Metadata = {
     "A global intelligence and news command centre: world news, analytics, regions, topics and long-form insight reports in one place.",
 };
 
+// Applies the stored theme before first paint so a light-theme user never
+// sees a dark flash (and vice versa). Mirrors the logic in lib/prefs.ts.
+const themeInit = `(function(){try{var t=localStorage.getItem("world-dashboard:theme")||"dark";var r=t==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):t;document.documentElement.dataset.theme=r}catch(e){document.documentElement.dataset.theme="dark"}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
       className={`${inter.variable} ${grotesk.variable} ${plexMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <SavedProvider>
           <SearchDialogProvider>

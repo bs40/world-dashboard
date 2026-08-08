@@ -6,6 +6,7 @@ import { Bell, LayoutGrid, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ClockUTC } from "./ClockUTC";
 import { RefreshControl } from "./RefreshControl";
+import { ThemeToggle } from "./ThemeToggle";
 import { useSearchDialog } from "./SearchDialog";
 
 const NAV = [
@@ -72,6 +73,7 @@ export function Header() {
           <span aria-hidden className="hidden h-6 w-px bg-edge-soft lg:block" />
           <ClockUTC />
           <div className="flex items-center">
+            <ThemeToggle />
             <button
               aria-label="Search (Ctrl+K)"
               onClick={open}

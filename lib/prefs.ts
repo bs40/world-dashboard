@@ -7,6 +7,7 @@
  */
 
 const INTERVAL_KEY = "world-dashboard:refresh-interval";
+const THEME_KEY = "world-dashboard:theme";
 
 export const REFRESH_INTERVALS = [5, 15, 30, 60] as const;
 export type RefreshInterval = (typeof REFRESH_INTERVALS)[number];
@@ -64,4 +65,74 @@ export function setRefreshInterval(value: RefreshInterval) {
     // Storage unavailable — the choice still applies for this session.
   }
   listeners.forEach((l) => l());
+}
+
+// ── theme preference (dark | light | system) ─────────────────
+// The resolved theme is applied as data-theme on <html>; a pre-hydration
+// script in layout.tsx does the same before React loads to avoid a flash.
+
+export type ThemePref = "dark" | "light" | "system";
+export const THEME_PREFS: ThemePref[] = ["dark", "light", "system"];
+const DEFAULT_THEME: ThemePref = "dark";
+
+let themeCached: ThemePref = DEFAULT_THEME;
+let themeLoaded = false;
+let systemListenerArmed = false;
+const themeListeners = new Set<() => void>();
+
+function isTheme(value: string | null): value is ThemePref {
+  return value === "dark" || value === "light" || value === "system";
+}
+
+function loadTheme() {
+  try {
+    const raw = localStorage.getItem(THEME_KEY);
+    themeCached = isTheme(raw) ? raw : DEFAULT_THEME;
+  } catch {
+    themeCached = DEFAULT_THEME;
+  }
+  themeLoaded = true;
+}
+
+export function resolveTheme(pref: ThemePref): "dark" | "light" {
+  if (pref !== "system") return pref;
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+function applyTheme() {
+  document.documentElement.dataset.theme = resolveTheme(themeCached);
+}
+
+export function subscribeTheme(onStoreChange: () => void) {
+  themeListeners.add(onStoreChange);
+  if (!systemListenerArmed) {
+    systemListenerArmed = true;
+    window
+      .matchMedia("(prefers-color-scheme: light)")
+      .addEventListener("change", () => {
+        if (themeCached === "system") applyTheme();
+      });
+  }
+  return () => {
+    themeListeners.delete(onStoreChange);
+  };
+}
+
+export function getThemeSnapshot(): ThemePref {
+  if (!themeLoaded) loadTheme();
+  return themeCached;
+}
+
+export const getThemeServerSnapshot = (): ThemePref => DEFAULT_THEME;
+
+export function setTheme(value: ThemePref) {
+  themeCached = value;
+  themeLoaded = true;
+  try {
+    localStorage.setItem(THEME_KEY, value);
+  } catch {
+    // Storage unavailable — applies for this session only.
+  }
+  applyTheme();
+  themeListeners.forEach((l) => l());
 }

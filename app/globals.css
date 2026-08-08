@@ -51,18 +51,69 @@
 
 :root {
   color-scheme: dark;
+  /* Panel gradient stops, themeable */
+  --panel-grad-a: rgb(11 31 46 / 0.55);
+  --panel-grad-b: rgb(9 25 37 / 0.85);
+  /* Accent glow colour used by hover/selection effects */
+  --accent-glow: 34 184 240;
+}
+
+/*
+ * Light theme — same cool blue-grey family, accent darkened for AA contrast.
+ * Activated by data-theme="light" on <html>, set pre-hydration in layout.tsx.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  background-color: #eef3f7;
+  color: #14273a;
+  --color-ink: #eef3f7;
+  --color-navy: #f7fafc;
+  --color-panel: #ffffff;
+  --color-panel2: #e7eef4;
+  --color-edge: #c3d5e1;
+  --color-edge-soft: #dae5ec;
+  --color-cyan: #0879b8;
+  --color-cyanpale: #055c8f;
+  --color-frost: #14273a;
+  --color-steel: #4e6879;
+  --color-steel-dim: #7a8fa0;
+  --color-pos: #157f55;
+  --color-warn: #8f6a0a;
+  --color-elev: #b25415;
+  --color-sev: #bc3131;
+  --color-tech: #6647c4;
+  --color-env: #1f7a6f;
+  --shadow-glow: 0 0 24px 0 rgb(8 121 184 / 0.1);
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.6) inset, 0 8px 24px -16px rgb(20 39 58 / 0.16);
+  --panel-grad-a: rgb(255 255 255 / 0.92);
+  --panel-grad-b: rgb(251 253 254 / 1);
+  --accent-glow: 8 121 184;
+}
+
+/*
+ * Page canvas colours live on <html> only (body inherits `color`, and the
+ * canvas paints from the root's background). Chromium does not reliably
+ * re-resolve var() in the root element's own styles when data-theme changes,
+ * so both theme blocks below re-state these as literals.
+ */
+html {
+  background-color: var(--color-ink);
+  color: var(--color-frost);
+}
+
+:root[data-theme="dark"] {
+  background-color: #030a10;
+  color: #e8f1f6;
 }
 
 html,
 body {
-  background: var(--color-ink);
-  color: var(--color-frost);
   font-family: var(--font-sans);
   font-feature-settings: "tnum" 1, "cv03" 1;
 }
 
 ::selection {
-  background: rgb(34 184 240 / 0.28);
+  background: rgb(var(--accent-glow) / 0.28);
 }
 
 /* Thin scrollbars that match the theme */
@@ -108,7 +159,7 @@ body {
 
 /* Panel base — 1px border, faint inner top light, restrained depth */
 .panel {
-  background: linear-gradient(180deg, rgb(11 31 46 / 0.55), rgb(9 25 37 / 0.85));
+  background: linear-gradient(180deg, var(--panel-grad-a), var(--panel-grad-b));
   border: 1px solid var(--color-edge-soft);
   border-radius: 0.375rem;
   box-shadow: var(--shadow-panel);
@@ -119,13 +170,13 @@ body {
 }
 .panel-hover:hover {
   border-color: var(--color-edge);
-  box-shadow: var(--shadow-panel), 0 0 20px -6px rgb(34 184 240 / 0.15);
+  box-shadow: var(--shadow-panel), 0 0 20px -6px rgb(var(--accent-glow) / 0.15);
 }
 
 /* Cyan edge illumination for active elements */
 .edge-glow {
-  border-color: rgb(34 184 240 / 0.45);
-  box-shadow: 0 0 16px -4px rgb(34 184 240 / 0.35), var(--shadow-panel);
+  border-color: rgb(var(--accent-glow) / 0.45);
+  box-shadow: 0 0 16px -4px rgb(var(--accent-glow) / 0.35), var(--shadow-panel);
 }
 
 /* Focus visibility */
@@ -139,9 +190,9 @@ body {
 .skeleton {
   background: linear-gradient(
     100deg,
-    rgb(18 52 74 / 0.25) 40%,
-    rgb(34 184 240 / 0.12) 50%,
-    rgb(18 52 74 / 0.25) 60%
+    var(--color-panel2) 40%,
+    rgb(var(--accent-glow) / 0.12) 50%,
+    var(--color-panel2) 60%
   );
   background-size: 200% 100%;
   animation: skeleton-wave 1.6s linear infinite;
