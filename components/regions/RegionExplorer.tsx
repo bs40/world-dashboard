@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { FilterTabs } from "@/components/ui/FilterTabs";
@@ -11,6 +11,7 @@ import { TrendIndicator } from "@/components/ui/TrendIndicator";
 import { NewsListItem } from "@/components/news/NewsCard";
 import { WorldMap } from "@/components/maps/WorldMap";
 import { getRegion, regions } from "@/data/regions";
+import { useFeed } from "@/lib/feed";
 
 const TABS = [
   { id: "summary", label: "Summary" },
@@ -43,6 +44,16 @@ export function RegionExplorer() {
   }
 
   const region = getRegion(regionId);
+  const { stories, isLive } = useFeed();
+
+  // Live headlines geocoded to this region, newest first; the bundled demo
+  // headlines only stand in when no feed story matches.
+  const headlines = useMemo(() => {
+    const live = stories.filter((s) => s.isLive && s.regionId === region.id).slice(0, 6);
+    return live.length > 0 ? live : region.headlines;
+  }, [stories, region]);
+
+  const headlinesAreLive = headlines.some((h) => h.isLive);
 
   return (
     <div className="space-y-4 p-4 lg:p-5">
@@ -106,15 +117,22 @@ export function RegionExplorer() {
         <Panel padded={false} className="overflow-hidden">
           <WorldMap
             window={region.mapWindow}
-            markers={region.headlines
-              .map((h, i) => ({
-                id: h.id,
-                lat: region.mapWindow.latMin + (region.mapWindow.latMax - region.mapWindow.latMin) * (0.3 + (i % 3) * 0.2),
-                lon: region.mapWindow.lonMin + (region.mapWindow.lonMax - region.mapWindow.lonMin) * (0.25 + (i % 4) * 0.17),
-                label: h.headline.split(" ").slice(0, 2).join(" "),
-                detail: h.headline,
-                category: h.category,
-              }))}
+            markers={headlines.map((h, i) => ({
+              id: h.id,
+              // Live stories carry real coordinates; demo ones get spread
+              // across the map window so the panel still reads as a map.
+              lat:
+                h.location?.lat ??
+                region.mapWindow.latMin +
+                  (region.mapWindow.latMax - region.mapWindow.latMin) * (0.3 + (i % 3) * 0.2),
+              lon:
+                h.location?.lon ??
+                region.mapWindow.lonMin +
+                  (region.mapWindow.lonMax - region.mapWindow.lonMin) * (0.25 + (i % 4) * 0.17),
+              label: h.location?.label ?? h.headline.split(" ").slice(0, 2).join(" "),
+              detail: h.headline,
+              category: h.category,
+            }))}
             className="min-h-80"
             ariaLabel={`Map of ${region.name}`}
           />
@@ -149,10 +167,14 @@ export function RegionExplorer() {
           </section>
 
           <section aria-labelledby="latest-headlines">
-            <SectionHeader title="Latest headlines" as="h2" action={{ label: "View all", href: "/news" }} />
+            <SectionHeader title="Latest headlines" as="h2" action={{ label: "View all", href: "/news" }}>
+              {!headlinesAreLive && isLive && (
+                <span className="label-caps-sm text-steel-dim">No live items yet</span>
+              )}
+            </SectionHeader>
             <Panel padded={false} className="px-4">
               <div className="divide-y divide-edge-soft">
-                {region.headlines.map((h) => (
+                {headlines.map((h) => (
                   <NewsListItem key={h.id} story={h} />
                 ))}
               </div>

@@ -1,5 +1,4 @@
 import type { SearchItem } from "@/types";
-import { topStories } from "./news";
 import { regions } from "./regions";
 import { topics } from "./topics";
 import { recentReports, explorerDatasets } from "./reports";
@@ -38,13 +37,8 @@ export const searchIndex: SearchItem[] = [
     href: "/topics/conflicts",
     meta: "Live tracker",
   },
-  ...topStories.map((s): SearchItem => ({
-    id: `story-${s.id}`,
-    title: s.headline,
-    kind: "story",
-    href: `/news/${s.id}`,
-    meta: "News story",
-  })),
+  // Stories are not listed here: the search dialog merges in live headlines
+  // from the feed store at query time (see components/layout/SearchDialog).
   ...recentReports.map((r): SearchItem => ({
     id: `report-${r.id}`,
     title: r.title,

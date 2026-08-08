@@ -16,7 +16,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, rmSync, statSync, existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 const API = "https://api.bunny.net";
@@ -144,7 +144,9 @@ async function ensureEdgeScript() {
     }
     host = zone.Hostnames?.[0]?.Value ?? `${SCRIPT_NAME}.b-cdn.net`;
   }
-  const url = `https://${host}`;
+  // Bunny returns DefaultHostname with the scheme already attached but
+  // Hostnames[].Value without it — normalise before building the URL.
+  const url = `https://${String(host).replace(/^https?:\/\//, "").replace(/\/+$/, "")}`;
   console.log(`Edge script live at ${url}`);
   return url;
 }
@@ -231,8 +233,14 @@ async function uploadDirectory(storageZone) {
 
 // ── build ────────────────────────────────────────────────────
 
-function buildStatic(newsEndpoint) {
+function buildStatic(rawEndpoint) {
+  const newsEndpoint = `https://${String(rawEndpoint).replace(/^https?:\/\//, "").replace(/\/+$/, "")}`;
   console.log(`Building static export (news endpoint: ${newsEndpoint})…`);
+  // NEXT_PUBLIC_* values are inlined at compile time, and an incremental
+  // build will happily reuse a cached module carrying the previous value.
+  // Always build the deploy artefact from a clean cache.
+  rmSync(".next", { recursive: true, force: true });
+  rmSync("out", { recursive: true, force: true });
   execSync("npx next build", {
     stdio: "inherit",
     env: {

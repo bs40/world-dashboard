@@ -8,12 +8,29 @@
  * with no confident match simply carry no marker.
  */
 
+/** Dashboard region ids, matching /data/regions.ts. */
+export type RegionId = "europe" | "americas" | "asia" | "africa" | "oceania";
+
 export interface Place {
   name: string;
   lat: number;
   lon: number;
   /** Extra spellings/demonyms that should resolve to this place. */
   aliases?: string[];
+  region?: RegionId;
+}
+
+/**
+ * Region assignment by longitude/latitude band, used for any place that
+ * doesn't state its region explicitly. Deliberately coarse — this drives
+ * "which regional tab does this headline belong under", not cartography.
+ */
+function regionFromCoords(lat: number, lon: number): RegionId {
+  if (lon >= 110 && lat < 0) return "oceania";
+  if (lon >= -30 && lon <= 60 && lat < 38) return "africa";
+  if (lon >= 40) return "asia";
+  if (lon < -25) return "americas";
+  return "europe";
 }
 
 const PLACES: Place[] = [
@@ -46,25 +63,28 @@ const PLACES: Place[] = [
   { name: "Iceland", lat: 64.15, lon: -21.94, aliases: ["Reykjavik"] },
   { name: "European Union", lat: 50.85, lon: 4.35, aliases: ["EU", "Brussels summit"] },
 
-  // Middle East & North Africa
-  { name: "Israel", lat: 31.78, lon: 35.22, aliases: ["Israeli", "Jerusalem", "Tel Aviv"] },
-  { name: "Gaza", lat: 31.5, lon: 34.47, aliases: ["Palestinian", "Palestine", "Rafah", "Khan Younis", "West Bank"] },
-  { name: "Lebanon", lat: 33.89, lon: 35.5, aliases: ["Lebanese", "Beirut", "Hezbollah"] },
-  { name: "Syria", lat: 33.51, lon: 36.29, aliases: ["Syrian", "Damascus", "Aleppo"] },
-  { name: "Iran", lat: 35.69, lon: 51.39, aliases: ["Iranian", "Tehran"] },
-  { name: "Iraq", lat: 33.31, lon: 44.36, aliases: ["Iraqi", "Baghdad"] },
-  { name: "Turkey", lat: 39.93, lon: 32.86, aliases: ["Turkish", "Ankara", "Istanbul", "Türkiye"] },
-  { name: "Saudi Arabia", lat: 24.71, lon: 46.68, aliases: ["Saudi", "Riyadh"] },
-  { name: "United Arab Emirates", lat: 25.2, lon: 55.27, aliases: ["UAE", "Dubai", "Abu Dhabi"] },
-  { name: "Qatar", lat: 25.29, lon: 51.53, aliases: ["Qatari", "Doha"] },
-  { name: "Yemen", lat: 15.35, lon: 44.21, aliases: ["Yemeni", "Sanaa", "Houthi", "Houthis"] },
-  { name: "Egypt", lat: 30.04, lon: 31.24, aliases: ["Egyptian", "Cairo"] },
+  // Middle East & North Africa.
+  // The Middle East sits inside the coordinate band that otherwise resolves
+  // to Africa, so these carry an explicit region.
+  { name: "Israel", lat: 31.78, lon: 35.22, aliases: ["Israeli", "Jerusalem", "Tel Aviv"], region: "asia" },
+  { name: "Gaza", lat: 31.5, lon: 34.47, aliases: ["Palestinian", "Palestine", "Rafah", "Khan Younis", "West Bank"], region: "asia" },
+  { name: "Lebanon", lat: 33.89, lon: 35.5, aliases: ["Lebanese", "Beirut", "Hezbollah"], region: "asia" },
+  { name: "Syria", lat: 33.51, lon: 36.29, aliases: ["Syrian", "Damascus", "Aleppo"], region: "asia" },
+  { name: "Iran", lat: 35.69, lon: 51.39, aliases: ["Iranian", "Tehran"], region: "asia" },
+  { name: "Iraq", lat: 33.31, lon: 44.36, aliases: ["Iraqi", "Baghdad"], region: "asia" },
+  { name: "Turkey", lat: 39.93, lon: 32.86, aliases: ["Turkish", "Ankara", "Istanbul", "Türkiye"], region: "asia" },
+  { name: "Saudi Arabia", lat: 24.71, lon: 46.68, aliases: ["Saudi", "Riyadh"], region: "asia" },
+  { name: "United Arab Emirates", lat: 25.2, lon: 55.27, aliases: ["UAE", "Dubai", "Abu Dhabi"], region: "asia" },
+  { name: "Qatar", lat: 25.29, lon: 51.53, aliases: ["Qatari", "Doha"], region: "asia" },
+  { name: "Oman", lat: 23.59, lon: 58.41, aliases: ["Muscat", "Hormuz"], region: "asia" },
+  { name: "Yemen", lat: 15.35, lon: 44.21, aliases: ["Yemeni", "Sanaa", "Houthi", "Houthis"], region: "asia" },
+  { name: "Egypt", lat: 30.04, lon: 31.24, aliases: ["Egyptian", "Cairo"], region: "africa" },
   { name: "Libya", lat: 32.89, lon: 13.19, aliases: ["Libyan", "Tripoli"] },
   { name: "Tunisia", lat: 36.81, lon: 10.18, aliases: ["Tunisian", "Tunis"] },
   { name: "Algeria", lat: 36.75, lon: 3.06, aliases: ["Algerian", "Algiers"] },
   { name: "Morocco", lat: 33.97, lon: -6.85, aliases: ["Moroccan", "Rabat", "Casablanca", "Ceuta"] },
-  { name: "Jordan", lat: 31.95, lon: 35.93, aliases: ["Jordanian", "Amman"] },
-  { name: "Afghanistan", lat: 34.53, lon: 69.17, aliases: ["Afghan", "Kabul", "Taliban"] },
+  { name: "Jordan", lat: 31.95, lon: 35.93, aliases: ["Jordanian", "Amman"], region: "asia" },
+  { name: "Afghanistan", lat: 34.53, lon: 69.17, aliases: ["Afghan", "Kabul", "Taliban"], region: "asia" },
 
   // Africa
   { name: "Nigeria", lat: 9.06, lon: 7.49, aliases: ["Nigerian", "Abuja", "Lagos"] },
@@ -132,8 +152,8 @@ const PLACES: Place[] = [
   { name: "New Zealand", lat: -41.29, lon: 174.78, aliases: ["Wellington", "Auckland"] },
   { name: "Fiji", lat: -18.12, lon: 178.44, aliases: ["Suva"] },
   { name: "Papua New Guinea", lat: -9.44, lon: 147.18, aliases: ["Port Moresby"] },
-  { name: "Antarctica", lat: -75.0, lon: 0.0, aliases: ["Antarctic"] },
-  { name: "Arctic", lat: 78.0, lon: 15.0, aliases: ["Greenland", "Svalbard"] },
+  { name: "Antarctica", lat: -75.0, lon: 0.0, aliases: ["Antarctic"], region: "oceania" },
+  { name: "Arctic", lat: 78.0, lon: 15.0, aliases: ["Greenland", "Svalbard"], region: "europe" },
 ];
 
 // Pre-build a longest-first list of (needle, place) pairs so specific names win.
@@ -148,7 +168,9 @@ function mentions(haystack: string, needle: string): boolean {
   return new RegExp(`(^|[^a-z])${escaped}([^a-z]|$)`, "i").test(haystack);
 }
 
-export function geocodeText(text: string): { lat: number; lon: number; label: string } | undefined {
+export function geocodeText(
+  text: string
+): { lat: number; lon: number; label: string; region: RegionId } | undefined {
   const hay = text.toLowerCase();
   let best: { place: Place; index: number; length: number } | undefined;
 
@@ -163,5 +185,12 @@ export function geocodeText(text: string): { lat: number; lon: number; label: st
     }
   }
 
-  return best ? { lat: best.place.lat, lon: best.place.lon, label: best.place.name } : undefined;
+  if (!best) return undefined;
+  const { place } = best;
+  return {
+    lat: place.lat,
+    lon: place.lon,
+    label: place.name,
+    region: place.region ?? regionFromCoords(place.lat, place.lon),
+  };
 }

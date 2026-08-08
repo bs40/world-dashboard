@@ -49,6 +49,8 @@ export interface NewsStory {
   link?: string;
   /** ISO publication timestamp (live items only). */
   publishedAt?: string;
+  /** Dashboard region id (europe/americas/asia/africa/oceania) inferred with the location. */
+  regionId?: string;
   /** Publisher display name, denormalised so live items render without a lookup. */
   sourceName?: string;
 }

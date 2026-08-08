@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { AlertTriangle, Banknote, Flag, Users } from "lucide-react";
+import { ConflictDevelopments } from "@/components/topics/ConflictDevelopments";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { WorldMap } from "@/components/maps/WorldMap";
 import { EditorialImage } from "@/components/ui/EditorialImage";
@@ -8,7 +8,7 @@ import { Panel } from "@/components/ui/Panel";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatusPill } from "@/components/ui/StatusPill";
-import { conflicts, conflictZones, developments, globalImpact } from "@/data/conflicts";
+import { conflicts, conflictZones, globalImpact } from "@/data/conflicts";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Conflict Tracker" };
@@ -105,27 +105,7 @@ export default function ConflictsPage() {
             </div>
           </Panel>
 
-          {/* Recent developments */}
-          <div className="mt-4">
-            <SectionHeader title="Recent developments" action={{ label: "View all", href: "/news" }} />
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {developments.map((d) => (
-                <Panel key={d.id} padded={false} hover className="group relative overflow-hidden">
-                  <EditorialImage src={d.image} alt="" className="h-20 w-full" />
-                  <div className="p-2.5">
-                    <h3 className="line-clamp-2 text-xs font-medium leading-snug text-frost group-hover:text-cyanpale">
-                      <Link href={`/news/${d.id}`} className="outline-none after:absolute after:inset-0">
-                        {d.title}
-                      </Link>
-                    </h3>
-                    <div className="label-caps-sm mt-1 text-steel-dim">
-                      {d.agoH}h ago · {d.sourcesCount} sources
-                    </div>
-                  </div>
-                </Panel>
-              ))}
-            </div>
-          </div>
+          <ConflictDevelopments />
         </section>
 
         {/* Global impact */}

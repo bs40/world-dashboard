@@ -168,6 +168,8 @@ export async function fetchApiStories(source: NewsSource): Promise<NewsStory[]> 
         ? Math.max(0, Math.round((now - published.getTime()) / 60000))
         : 0;
 
+    const location = geocodeText(`${headline} ${summary}`);
+
     stories.push({
       id: `live-${hashId(result.id ?? result.webUrl ?? headline)}`,
       headline,
@@ -179,7 +181,8 @@ export async function fetchApiStories(source: NewsSource): Promise<NewsStory[]> 
       publishedAgoMin,
       publishedAt: published?.toISOString(),
       image: pickImage(result),
-      location: geocodeText(`${headline} ${summary}`),
+      location,
+      regionId: location?.region,
       link: result.webUrl,
       isLive: true,
     });

@@ -284,6 +284,7 @@ export async function fetchRssStories(source: NewsSource): Promise<NewsStory[]> 
     if (publishedAgoMin > 60 * 24 * 7) continue;
 
     const category = inferCategory(headline, summary, source.defaultCategory ?? "politics");
+    const location = geocodeText(`${headline} ${summary}`);
 
     stories.push({
       id: `live-${hashId(guid)}`,
@@ -295,7 +296,8 @@ export async function fetchRssStories(source: NewsSource): Promise<NewsStory[]> 
       publishedAgoMin,
       publishedAt: published?.toISOString(),
       image: extractImage(item),
-      location: geocodeText(`${headline} ${summary}`),
+      location,
+      regionId: location?.region,
       link: link || undefined,
       isLive: true,
     });

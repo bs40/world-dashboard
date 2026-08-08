@@ -55,7 +55,16 @@ let state: FeedState = INITIAL;
 const listeners = new Set<() => void>();
 let started = false;
 let timerId: ReturnType<typeof setInterval> | undefined;
+let retryId: ReturnType<typeof setTimeout> | undefined;
 let inFlight = false;
+let failures = 0;
+
+/** Retry backoff after a failed load: 3s, 9s, 27s, then every ~60s. */
+function scheduleRetry() {
+  if (retryId) clearTimeout(retryId);
+  const delay = Math.min(60_000, 3_000 * 3 ** Math.min(failures - 1, 3));
+  retryId = setTimeout(() => void load(), delay);
+}
 
 function emit(patch: Partial<FeedState>) {
   state = { ...state, ...patch };
@@ -73,6 +82,8 @@ async function load() {
     const res = await fetch(NEWS_ENDPOINT, { cache: "no-store" });
     const data = (await res.json()) as FeedApiResponse;
     if (data.ok && data.stories.length > 0) {
+      failures = 0;
+      if (retryId) clearTimeout(retryId);
       emit({
         stories: data.stories,
         status: "live",
@@ -94,7 +105,11 @@ async function load() {
       });
     }
   } catch {
+    // A transient network failure must not strand the dashboard on demo
+    // content until the next poll — retry soon, backing off if it persists.
+    failures++;
     emit({ stories: [], status: "error", lastUpdated: new Date(), isRefreshing: false });
+    scheduleRetry();
   } finally {
     inFlight = false;
   }

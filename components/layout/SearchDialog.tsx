@@ -14,7 +14,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Compass, Database, FileText, Globe2, Newspaper, Search, Target, X } from "lucide-react";
 import { searchIndex } from "@/data/search";
-import { cn } from "@/lib/utils";
+import { useFeed } from "@/lib/feed";
+import { cn, storyHref } from "@/lib/utils";
 import type { SearchItem } from "@/types";
 
 const KIND_ICON: Record<SearchItem["kind"], typeof Globe2> = {
@@ -44,6 +45,7 @@ export function SearchDialogProvider({ children }: { children: ReactNode }) {
   const [highlighted, setHighlighted] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { stories: feedStories } = useFeed();
 
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => {
@@ -68,13 +70,27 @@ export function SearchDialogProvider({ children }: { children: ReactNode }) {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
 
+  // Live headlines are searchable alongside regions, topics and datasets.
+  const index = useMemo<SearchItem[]>(() => {
+    const stories = feedStories
+      .filter((s) => s.isLive)
+      .map(
+        (s): SearchItem => ({
+          id: `story-${s.id}`,
+          title: s.headline,
+          kind: "story",
+          href: storyHref(s),
+          meta: s.sourceName ?? "News story",
+        })
+      );
+    return [...stories, ...searchIndex];
+  }, [feedStories]);
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return searchIndex.slice(0, 8);
-    return searchIndex
-      .filter((item) => item.title.toLowerCase().includes(q))
-      .slice(0, 10);
-  }, [query]);
+    if (!q) return index.slice(0, 8);
+    return index.filter((item) => item.title.toLowerCase().includes(q)).slice(0, 10);
+  }, [query, index]);
 
   const go = useCallback(
     (item: SearchItem) => {

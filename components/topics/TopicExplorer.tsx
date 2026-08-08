@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Droplets, Flame, Plus, Sun, Thermometer, Wind, Check } from "lucide-react";
 import { AnomalyBars } from "@/components/charts/AnomalyBars";
 import { WorldMap } from "@/components/maps/WorldMap";
 import { EditorialImage } from "@/components/ui/EditorialImage";
+import { fallbackFor } from "@/lib/imagery";
 import { FilterTabs } from "@/components/ui/FilterTabs";
 import { Panel } from "@/components/ui/Panel";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useSaved } from "@/lib/saved";
+import { useFeed } from "@/lib/feed";
 import { climateNews, extremeWeatherStats, getTopic, temperatureAnomaly, topics } from "@/data/topics";
-import { cn } from "@/lib/utils";
+import { cn, formatAgo, storyHref } from "@/lib/utils";
+import type { NewsStory } from "@/types";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -58,6 +61,36 @@ export function TopicExplorer() {
   const topic = getTopic(slug);
   const followed = isSaved(`topic-${topic.slug}`);
   const isClimate = topic.slug === "climate-change";
+  const { stories: feedStories } = useFeed();
+
+  /**
+   * Live coverage for this topic: category match first, then a keyword pass
+   * over headlines so narrower topics (space, migration, democracy) still
+   * pull relevant stories. Falls back to the bundled samples when empty.
+   */
+  const topicNews = useMemo<NewsStory[]>(() => {
+    const live = feedStories.filter((s) => s.isLive);
+    const byCategory = live.filter((s) => s.category === topic.category);
+    const words = topic.name.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+    const byKeyword = live.filter((s) =>
+      words.some((w) => `${s.headline} ${s.summary ?? ""}`.toLowerCase().includes(w))
+    );
+    const merged: NewsStory[] = [];
+    for (const s of [...byKeyword, ...byCategory]) {
+      if (!merged.some((m) => m.id === s.id)) merged.push(s);
+      if (merged.length >= 4) break;
+    }
+    if (merged.length > 0) return merged;
+    return climateNews.map((n) => ({
+      id: n.id,
+      headline: n.headline,
+      category: "environment",
+      sourceId: "climate-bureau",
+      publishedAgoMin: n.agoH * 60,
+      sourcesCount: n.sourcesCount,
+      image: n.image,
+    }));
+  }, [feedStories, topic]);
 
   return (
     <div className="space-y-4 p-4 lg:p-5">
@@ -188,17 +221,23 @@ export function TopicExplorer() {
           <section aria-labelledby="topic-news">
             <SectionHeader title="Latest news" action={{ label: "View all", href: "/news" }} />
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {climateNews.map((n) => (
+              {topicNews.map((n) => (
                 <Panel key={n.id} padded={false} hover className="group relative overflow-hidden">
-                  <EditorialImage src={n.image} alt="" className="h-24 w-full" />
+                  <EditorialImage
+                    src={n.image ?? fallbackFor(n.category)}
+                    fallbackSrc={fallbackFor(n.category)}
+                    alt=""
+                    className="h-24 w-full"
+                  />
                   <div className="p-3">
                     <h3 className="line-clamp-2 text-xs font-medium leading-snug text-frost group-hover:text-cyanpale">
-                      <Link href={`/news/${n.id}`} className="outline-none after:absolute after:inset-0">
+                      <Link href={storyHref(n)} className="outline-none after:absolute after:inset-0">
                         {n.headline}
                       </Link>
                     </h3>
                     <div className="label-caps-sm mt-1.5 text-steel-dim">
-                      {n.agoH}h ago · {n.sourcesCount} sources
+                      {formatAgo(n.publishedAgoMin)}
+                      {n.sourceName ? ` · ${n.sourceName}` : ""}
                     </div>
                   </div>
                 </Panel>
